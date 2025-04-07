@@ -7,93 +7,134 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey, {
     }
 });
 
-
-document.getElementById('registrationForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    // Coletar dados do formulário
-    const user = {
-        name: document.getElementById('name').value.trim(),
-        telefone: document.getElementById('telefone').value.trim(),
-        email: document.getElementById('email').value.trim().toLowerCase(),
-        password: document.getElementById('password').value,
-        role: document.querySelector('input[name="role"]:checked').value
-    };
-
-    // Validações
-    if (!validateForm(user)) {
-        return;
-    }
-
-    // Desabilitar botão durante o processamento
-    const submitBtn = document.getElementById('submitButton');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Registrando...';
-
-    try {
-        // Cadastrar no Supabase Auth
-        const { data, error } = await supabaseClient.auth.signUp({
-            email: user.email,
-            password: user.password,
-            options: {
-                data: {
-                    full_name: user.name,
-                    phone: user.telefone,
-                    role: user.role
-                }
-            }
-        });
-
-        if (error) throw error;
-
-        // Sucesso - redirecionar ou mostrar mensagem
-        alert('Cadastro realizado! Verifique seu email para confirmação.');
-        //window.location.href = '/login.html'; // Ajuste conforme necessário
-
-    } catch (error) {
-        console.error('Erro no cadastro:', error);
-        alert(`Erro: ${error.message}`);
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Registrar';
-    }
-});
-
-// Função de validação
-function validateForm(user) {
-    // Validação de senha
-    if (user.password.length < 6) {
-        alert('A senha deve ter pelo menos 6 caracteres');
-        return false;
-    }
-
-    // Confirmação de senha
-    const confirmPassword = document.getElementById('confirm_password').value;
-    if (user.password !== confirmPassword) {
-        alert('As senhas não coincidem');
-        return false;
-    }
-
-    // Validação simples de email
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)) {
-        alert('Por favor, insira um email válido');
-        return false;
-    }
-
-    return true;
+// Função para verificar autenticação e redirecionar
+async function checkAuth() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    return user;
 }
 
-document.getElementById('google-signup-btn').addEventListener('click', async () => {
-    const { error } = await supabaseClient.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-            redirectTo: 'http://localhost:3000/build/pages/welcome.html'
-        }
+// Função para fazer login
+async function login(email, password) {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
     });
-    alert('Cadastro realizado! Verifique seu email para confirmação.');
-    window.location.href = '/build/pages/welcome.html';
 
     if (error) {
-        alert('Erro ao cadastrar com Google: ' + error.message);
+        throw error;
+    }
+    return data;
+}
+
+// Função para fazer logout
+async function logout() {
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) {
+        throw error;
+    }
+}
+
+// Registro de usuário
+document.addEventListener('DOMContentLoaded', () => {
+    const registrationForm = document.getElementById('registrationForm');
+    if (registrationForm) {
+        registrationForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Coletar dados do formulário
+            const user = {
+                name: document.getElementById('name').value.trim(),
+                email: document.getElementById('email').value.trim().toLowerCase(),
+                password: document.getElementById('password').value,
+            };
+
+            // Desabilitar botão durante o processamento
+            const submitBtn = document.getElementById('submitButton');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Registrando...';
+
+            try {
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email: user.email,
+                    password: user.password,
+                    options: {
+                        emailRedirectTo: 'https://login-project-e0576.firebaseapp.com/pages/welcome.html',
+                        data: {
+                            full_name: user.name
+                        }
+                    }
+                });
+            
+                if (error) throw error;
+                
+                // Mostrar modal de confirmação de e-mail
+                const emailModal = new bootstrap.Modal(document.getElementById('emailConfirmationModal'));
+                emailModal.show();
+                document.getElementById('registrationForm').reset();
+                
+            } catch (error) {
+                console.error('Erro no cadastro:', error);
+                showErrorModal(`Erro: ${error.message}`);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Criar conta';
+            }
+        });
+    }
+
+    // Login de usuário
+    const loginForm = document.querySelector('form[method="post"]');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const submitBtn = loginForm.querySelector('button[type="submit"]');
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Entrando...';
+            
+            try {
+                await login(email, password);
+                window.location.href = "pages/welcome.html";
+            } catch (error) {
+                console.error('Erro no login:', error);
+                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                errorModal.show();
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Entrar';
+            }
+        });
+    }
+
+    // Login com Google
+    const googleSignupBtn = document.getElementById('google-signup-btn');
+    if (googleSignupBtn) {
+        googleSignupBtn.addEventListener('click', async () => {
+            const { error } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: 'https://login-project-e0576.firebaseapp.com/pages/welcome.html'
+                }
+            });
+            
+            if (error) {
+                showErrorModal('Erro ao entrar com o Google: ' + error.message);
+            }
+        });
     }
 });
+
+function showErrorModal(message) {
+    const errorModal = document.getElementById('errorModal');
+    if (errorModal) {
+        const errorMessage = document.getElementById('errorMessage');
+        errorMessage.textContent = message;
+        const modal = new bootstrap.Modal(errorModal);
+        modal.show();
+    } else {
+        alert(message);
+    }
+}
