@@ -1,0 +1,180 @@
+
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Usuário</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #8BC6EC;
+            background-image: linear-gradient(135deg, #8BC6EC 0%, #9599E2 100%);
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            width: 400px;
+        }
+
+        .feedback {
+            font-size: 0.9em;
+            color: red;
+            display: none;
+        }
+
+        .valid-feedback {
+            color: green;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="glass my-5">
+        <h2 class="text-center">Registrar-se</h2>
+        <form id="registrationForm" class="mt-5"">
+            <div class="mb-3">
+                <label for="nome" class="form-label">Nome</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label for="telefone" class="form-label">Telefone</label>
+                <input type="tel" class="form-control" id="telefone" name="telefone">
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Senha</label>
+                <div class="input-group">
+                    <input type="password" class="form-control" id="password" name="password" required
+                        oninput="validatePassword()">
+                    <button type="button" class="btn btn-outline-secondary" id="togglePassword"
+                        onclick="togglePasswordVisibility()">
+                        <i id="eyeIcon" class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <div id="passwordFeedback" class="feedback">A senha deve ter pelo menos 6 caracteres.</div>
+            </div>
+            <div class="mb-3">
+                <label for="confirm_password" class="form-label">Confirmar Senha</label>
+                <div class="input-group">
+                    <input type="password" class="form-control" id="confirm_password" required
+                        oninput="checkPasswordsMatch()">
+                    <button type="button" class="btn btn-outline-secondary" id="toggleConfirmPassword"
+                        onclick="toggleConfirmPasswordVisibility()">
+                        <i id="eyeIconConfirm" class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <div id="confirmPasswordFeedback" class="feedback">As senhas não coincidem.</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Função (Role)</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="role" id="roleUser" value="user" checked
+                        required>
+                    <label class="form-check-label" for="roleUser">Usuário</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="role" id="roleAdmin" value="admin" required>
+                    <label class="form-check-label" for="roleAdmin">Admin</label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" id="submitButton" disabled>Registrar</button>
+        </form>
+    </div>
+
+    <!-- Modal de Erro -->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="errorModalLabel">Erro de Validação</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="errorMessage"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirm_password');
+        const passwordFeedback = document.getElementById('passwordFeedback');
+        const confirmPasswordFeedback = document.getElementById('confirmPasswordFeedback');
+        const submitButton = document.getElementById('submitButton');
+        const togglePassword = document.getElementById('togglePassword');
+        const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+        const eyeIcon = document.getElementById('eyeIcon');
+        const eyeIconConfirm = document.getElementById('eyeIconConfirm');
+
+        // Função para alternar a visibilidade da senha
+        function togglePasswordVisibility() {
+            const type = passwordInput.type === 'password' ? 'text' : 'password';
+            passwordInput.type = type;
+            eyeIcon.classList.toggle('bi-eye-slash');
+        }
+
+        // Função para alternar a visibilidade da confirmação de senha
+        function toggleConfirmPasswordVisibility() {
+            const type = confirmPasswordInput.type === 'password' ? 'text' : 'password';
+            confirmPasswordInput.type = type;
+            eyeIconConfirm.classList.toggle('bi-eye-slash');
+        }
+
+        // Função para validar a senha
+        function validatePassword() {
+            if (passwordInput.value.length < 6) {
+                passwordFeedback.style.display = 'block';
+                submitButton.disabled = true;
+            } else {
+                passwordFeedback.style.display = 'none';
+                submitButton.disabled = false;
+            }
+        }
+
+        // Função para verificar se as senhas coincidem
+        function checkPasswordsMatch() {
+            if (passwordInput.value !== confirmPasswordInput.value) {
+                confirmPasswordFeedback.style.display = 'block';
+                submitButton.disabled = true;
+            } else {
+                confirmPasswordFeedback.style.display = 'none';
+                submitButton.disabled = false;
+            }
+        }
+
+        // Função para exibir o modal de erro
+        function showErrorModal(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            const modal = new bootstrap.Modal(document.getElementById('errorModal'));
+            modal.show();
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="../js/auth.js"></script>
+</body>
+
+</html>
